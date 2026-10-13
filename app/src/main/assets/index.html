@@ -124,7 +124,7 @@
         .close-btn:hover { color: #fff; }
         .modal-body img { max-width: 100%; height: auto; margin: 10px 0; border-radius: 6px; border: 1px solid #555; }
 
-        /* 恢复紧凑尺寸且保持纵向排列的图标按钮 */
+        /* 纵向排列紧凑图标 */
         .icon-vertical-picker {
             display: flex;
             flex-direction: column;
@@ -242,7 +242,6 @@
 </div>
 
 <div class="header">
-    <!-- 合并为同一行的控制栏 -->
     <div class="single-control-row">
         <div class="scale-box">
             <span id="t-scaleLabel" class="scale-label-custom">标尺:</span>
@@ -294,7 +293,7 @@
 <input type="file" id="inputAlbum" accept="image/*" onchange="loadImg(this)">
 <input type="file" id="inputCamera" accept="image/*" capture="camera" onchange="loadImg(this)">
 
-<!-- 纵向排列、尺寸还原为 70px 的选择弹窗 -->
+<!-- 纵向排列的选择弹窗 -->
 <div id="imageSourceModal" class="modal">
     <div class="modal-content" style="max-width:180px; text-align:center; padding:15px 20px;">
         <div class="modal-header" style="justify-content:flex-end; border-bottom:none; padding-bottom:0; margin-bottom:5px;">
@@ -662,16 +661,20 @@
 
     function triggerAlbum() {
         closeModal('imageSourceModal');
-        const input = document.getElementById('inputAlbum');
-        input.value = '';
-        input.click();
+        const albumInput = document.getElementById('inputAlbum');
+        const cameraInput = document.getElementById('inputCamera');
+        if (albumInput) albumInput.value = '';
+        if (cameraInput) cameraInput.value = '';
+        setTimeout(() => { albumInput.click(); }, 50);
     }
 
     function triggerCamera() {
         closeModal('imageSourceModal');
-        const input = document.getElementById('inputCamera');
-        input.value = '';
-        input.click();
+        const albumInput = document.getElementById('inputAlbum');
+        const cameraInput = document.getElementById('inputCamera');
+        if (albumInput) albumInput.value = '';
+        if (cameraInput) cameraInput.value = '';
+        setTimeout(() => { cameraInput.click(); }, 50);
     }
 
     function createHandle(svg, lineId, idx, x, y, color) {
@@ -950,36 +953,45 @@
     }
 
     function loadImg(el) {
-        if(!el.files || !el.files[0]) return;
+        if (!el.files || !el.files[0]) return;
         const file = el.files[0];
-        
-        // 采用 FileReader 读取本地 Blob/DataURL，兼容 Android 拍照与相册回传
+
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = document.getElementById('img-' + cur);
-            img.src = e.target.result;
+            
+            // 彻底解绑并清除旧图像源，防止缓存阻塞覆盖
+            img.onload = null;
+            img.src = '';
+
             img.onload = () => {
                 const w = img.naturalWidth;
                 const h = img.naturalHeight;
-                
+
                 data[cur].naturalW = w;
                 data[cur].naturalH = h;
 
-                document.getElementById('svg-'+cur).setAttribute('viewBox', `0 0 ${w} ${h}`);
+                const svg = document.getElementById('svg-' + cur);
+                svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
                 setupSVG(cur, w, h);
-                
+
                 const containerW = document.getElementById('container').clientWidth || 500;
                 const initScale = containerW / w;
                 data[cur].baseS = initScale;
                 data[cur].s = initScale;
                 data[cur].panX = 0;
                 data[cur].panY = 0;
-                data[cur].moved1 = false; 
-                data[cur].moved2 = false; 
+                data[cur].moved1 = false;
+                data[cur].moved2 = false;
 
                 apply();
                 updateCalc();
+
+                // 读入成功后立即清空当前 input 的 value，保证连续替换同名或不同图片必触发
+                el.value = '';
             };
+
+            img.src = e.target.result;
         };
         reader.readAsDataURL(file);
     }
