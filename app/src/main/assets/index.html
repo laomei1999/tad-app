@@ -24,6 +24,12 @@
         .btn-group { display: flex; gap: 8px; align-items: center; }
         .btn { border: none; padding: 6px 14px; border-radius: 6px; font-size: 14px; color: white; cursor: pointer; background: #444; }
         
+        /* 标尺文字样式：加粗并设定为与黄线完全一致的 #ffff00 */
+        .scale-label-style {
+            color: #ffff00;
+            font-weight: bold;
+        }
+
         /* 下拉菜单样式 - 移除 CSS hover，完全由 JS 点击事件控制 */
         .dropdown { position: relative; display: inline-block; }
         .dropdown-content {
@@ -151,27 +157,31 @@
         input[type="file"] { display: none; }
         .ref-box { margin-top: 15px; padding: 10px; background: #1a1a1a; border-left: 3px solid #007bff; border-radius: 4px; font-size: 11px; word-break: break-word; color: #bbb; }
 
-        /* 底部选择菜单 */
-        .photo-picker-box {
+        /* 仅保留图标的弹窗选择器样式 */
+        .icon-only-picker-box {
             display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 15px;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            padding: 15px 0 5px 0;
         }
-        .picker-option-btn {
+        .icon-only-btn {
             background: #333;
-            color: white;
             border: 1px solid #555;
-            padding: 12px;
-            font-size: 15px;
-            border-radius: 8px;
+            width: 70px;
+            height: 70px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            font-size: 34px;
             cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
         }
-        .picker-option-btn:active { background: #007bff; }
+        .icon-only-btn:active {
+            background: #007bff;
+            transform: scale(0.95);
+        }
     </style>
 </head>
 <body>
@@ -196,9 +206,9 @@
 
 <div class="header">
     <div class="config-row">
-        <div style="font-size:14px;"><span id="t-scaleLabel">标尺:</span> <input type="number" id="refD" value="16.0" step="0.1" oninput="updateCalc()" style="width:55px; background:#444; color:white; border:none; padding:8px; border-radius:4px; text-align:center; font-weight:bold;"> mm</div>
+        <div style="font-size:14px;"><span id="t-scaleLabel" class="scale-label-style">标尺:</span> <input type="number" id="refD" value="16.0" step="0.1" oninput="updateCalc()" style="width:55px; background:#444; color:white; border:none; padding:8px; border-radius:4px; text-align:center; font-weight:bold;"> mm</div>
         <div class="btn-group">
-            <button class="btn" style="background:#28a745;" onclick="openModal('imageSourceModal')" id="t-btnSelectImg">📂 导入/拍摄图像</button>
+            <button class="btn" style="background:#28a745;" onclick="openModal('imageSourceModal')" id="t-btnSelectImg">📂 选择图片</button>
             <div class="dropdown">
                 <button class="btn" style="background:#17a2b8;" onclick="toggleDropdown('usageDropdown', event)" id="t-btnUsage">使用方法 ▼</button>
                 <div class="dropdown-content" id="usageDropdown">
@@ -239,24 +249,289 @@
     </div>
 </div>
 
-<!-- 隐藏的文件选择器：分别对应相册与直调相机 -->
+<!-- 隐藏文件已按照要求完成全部调整：
+
+1. **按钮名称与弹出菜单精简**：
+   * 主按钮恢复为 **📂 选择图片**（各语言同步改回「选择图片 / Select Image / Bild wählen 等」）。
+   * 点击后弹出的选择面板中移除了所有冗余汉字/外语说明，仅保留横向并排的纯图标大按钮：**📁**（相册/文件夹）与 **📷**（照相机），界面纯粹高效。
+2. **多语言用法与临床参考全量补齐**：
+   * 为德语（de）、西班牙语（es）、法语（fr）、葡萄牙语（pt）、日语（ja）、繁体中文（zh-TW）完整补全了与简体中文和英文完全对齐的**三步骤详解、本地 `guide.png` 示意图与临床风险评估四项指标表格**。
+3. **“标尺：”样式定制**：
+   * 将标尺标签样式设置为加粗，颜色统一为与校准线一致的高亮荧光黄（`color: #ffff00; font-weight: bold;`）。
+
+---
+
+### 更新后的完整 `index.html` 代码
+
+请直接打开 `app/src/main/assets/index.html`，全选并替换为以下内容：
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TAD 骨科精密测量系统 v4</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #000; color: white; margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        
+        /* 顶部导航栏 */
+        .top-nav {
+            background: #111;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            z-index: 101;
+        }
+        .top-title { font-size: 16px; font-weight: bold; color: #007bff; }
+        
+        .header { background: #222; padding: 10px; z-index: 100; border-bottom: 1px solid #444; }
+        .config-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+        .btn-group { display: flex; gap: 8px; align-items: center; }
+        .btn { border: none; padding: 6px 14px; border-radius: 6px; font-size: 14px; color: white; cursor: pointer; background: #444; }
+        
+        /* 标尺样式：加粗并使用黄色线段同款颜色 #ffff00 */
+        .scale-label-custom {
+            color: #ffff00;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* 下拉菜单样式 - 移除 CSS hover，完全由 JS 点击事件控制 */
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background-color: #333;
+            min-width: 140px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+            z-index: 200;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #555;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .dropdown-content.show { display: block; }
+        .dropdown-content a {
+            color: white;
+            padding: 10px 14px;
+            text-decoration: none;
+            display: block;
+            font-size: 13px;
+        }
+        .dropdown-content a:hover, .dropdown-content a:active { background-color: #007bff; }
+
+        /* 模态弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #222;
+            color: #eee;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid #444;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid #444; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .close-btn { font-size: 20px; cursor: pointer; color: #aaa; border: none; background: none; }
+        .close-btn:hover { color: #fff; }
+        .modal-body img { max-width: 100%; height: auto; margin: 10px 0; border-radius: 6px; border: 1px solid #555; }
+        
+        /* 表格样式 */
+        .guide-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        .guide-table th, .guide-table td { border: 1px solid #555; padding: 6px; text-align: left; }
+        .guide-table th { background: #333; }
+
+        /* TAD 结果栏 */
+        .result-bar { background: #111; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        .tad-val { font-size: 28px; font-weight: bold; transition: color 0.3s; }
+        .legend-box { font-size: 11px; color: #ddd; }
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .dot { width: 8px; height: 8px; border-radius: 2px; }
+
+        /* 风险提示区 */
+        #riskNotice { font-size: 13px; font-weight: bold; text-align: center; padding: 4px; border-radius: 4px; margin-bottom: 8px; display: none; }
+        .risk-red { color: #ff4444; background: rgba(255, 68, 68, 0.1); }
+
+        /* 标签切换栏 */
+        .tab-bar { display: flex; gap: 4px; background: #444; padding: 3px; border-radius: 8px; }
+        .tab { flex: 1; padding: 8px; text-align: center; background: #333; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 13px; }
+        .tab.active { background: #007bff; color: white; }
+        .tab-val-inline { margin-left: 4px; font-size: 12px; }
+        
+        /* 核心视图布局 */
+        .viewport-wrapper {
+            flex: 1;
+            position: relative;
+            display: flex;
+            overflow: hidden;
+            background: #111;
+        }
+
+        .main-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #111;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            touch-action: none;
+        }
+
+        .viewer-box {
+            display: none;
+            position: relative;
+            transform-origin: top center;
+            margin: 0 auto;
+        }
+        .viewer-box.active { display: block; }
+        .zoom-layer { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+        img { display: block; user-select: none; pointer-events: none; }
+        svg { touch-action: none; user-select: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; }
+        
+        /* 测量线样式 */
+        .line-ref { stroke: #ffff00; stroke-width: 2.5; }
+        .line-mea { stroke: #ff00ff; stroke-width: 2.5; }
+        .handle-hitbox { fill: transparent; cursor: pointer; }
+
+        /* 放大镜 */
+        #magnifier {
+            position: fixed; width: 80px; height: 80px; border: 2px solid #007bff;
+            border-radius: 50%; overflow: hidden; display: none; z-index: 1000;
+            pointer-events: none; background: #000; box-shadow: 0 0 15px rgba(0,0,0,0.8);
+        }
+        #mag-content { position: absolute; transform-origin: 0 0; }
+        #magnifier::after { content: ""; position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; border: 1px solid #ff0000; transform: translate(-50%, -50%); border-radius: 50%; }
+
+        input[type="file"] { display: none; }
+        .ref-box { margin-top: 15px; padding: 10px; background: #1a1a1a; border-left: 3px solid #007bff; border-radius: 4px; font-size: 11px; word-break: break-word; color: #bbb; }
+
+        /* 纯图标选择面板：无任何文字干扰 */
+        .icon-only-picker {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 25px;
+            padding: 10px 0;
+        }
+        .icon-picker-btn {
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            width: 72px;
+            height: 72px;
+            font-size: 32px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .icon-picker-btn:active {
+            background: #007bff;
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<div class="top-nav">
+    <div class="top-title" id="t-topTitle">TAD测量</div>
+    <div class="dropdown">
+        <button class="btn" style="background:#007bff; padding: 4px 10px; font-size: 13px;" onclick="toggleDropdown('langMenu', event)">🌐 Language ▼</button>
+        <div class="dropdown-content" id="langMenu">
+            <a href="javascript:void(0)" onclick="changeLang('de')">Deutsch (德语)</a>
+            <a href="javascript:void(0)" onclick="changeLang('en')">English (英语)</a>
+            <a href="javascript:void(0)" onclick="changeLang('es')">Español (西班牙语)</a>
+            <a href="javascript:void(0)" onclick="changeLang('fr')">Français (法语)</a>
+            <a href="javascript:void(0)" onclick="changeLang('pt')">Português (葡萄牙语)</a>
+            <a href="javascript:void(0)" onclick="changeLang('ja')">日本語 (日语)</a>
+            <a href="javascript:void(0)" onclick="changeLang('zh-CN')">简体中文</a>
+            <a href="javascript:void(0)" onclick="changeLang('zh-TW')">繁體中文</a>
+        </div>
+    </div>
+</div>
+
+<div class="header">
+    <div class="config-row">
+        <div style="font-size:14px;"><span id="t-scaleLabel" class="scale-label-custom">标尺:</span> <input type="number" id="refD" value="16.0" step="0.1" oninput="updateCalc()" style="width:55px; background:#444; color:white; border:none; padding:8px; border-radius:4px; text-align:center; font-weight:bold;"> mm</div>
+        <div class="btn-group">
+            <button class="btn" style="background:#28a745;" onclick="openModal('imageSourceModal')" id="t-btnSelectImg">📂 选择图片</button>
+            <div class="dropdown">
+                <button class="btn" style="background:#17a2b8;" onclick="toggleDropdown('usageDropdown', event)" id="t-btnUsage">使用方法 ▼</button>
+                <div class="dropdown-content" id="usageDropdown">
+                    <a href="javascript:void(0)" onclick="openModal('usageModal'); closeAllDropdowns();" id="t-menuUsage">用法</a>
+                    <a href="javascript:void(0)" onclick="openModal('aboutModal'); closeAllDropdowns();" id="t-menuAbout">关于</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="result-bar">
+        <div><span style="font-size:11px;color:#aaa;" id="t-totalTadLabel">总 TAD</span><br><span class="tad-val" id="tadTotal">--</span></div>
+        <div class="legend-box">
+            <div class="legend-item"><div class="dot" style="background:#ffff00;"></div><span id="t-legendRef">标尺(校准) </span></div>
+            <div class="legend-item"><div class="dot" style="background:#ff00ff;"></div><span id="t-legendMea">测量(数据) </span></div>
+        </div>
+    </div>
+
+    <div class="tab-bar">
+        <div id="tab-ap" class="tab active" onclick="switchTab('ap')"><span id="t-tabAp">正位</span><span class="tab-val-inline" id="apDisplay">--</span></div>
+        <div id="tab-lat" class="tab" onclick="switchTab('lat')"><span id="t-tabLat">侧位</span><span class="tab-val-inline" id="latDisplay">--</span></div>
+    </div>
+
+    <div id="riskNotice" class="risk-red"></div>
+</div>
+
+<div class="viewport-wrapper">
+    <div class="main-container" id="container">
+        <div id="magnifier">
+            <div id="mag-content"></div>
+        </div>
+        <div id="view-ap" class="viewer-box active">
+            <div class="zoom-layer" id="layer-ap"><img id="img-ap"><svg id="svg-ap"></svg></div>
+        </div>
+        <div id="view-lat" class="viewer-box">
+            <div class="zoom-layer" id="layer-lat"><img id="img-lat"><svg id="svg-lat"></svg></div>
+        </div>
+    </div>
+</div>
+
+<!-- 隐藏的文件调用选择器 -->
 <input type="file" id="inputAlbum" accept="image/*" onchange="loadImg(this)">
 <input type="file" id="inputCamera" accept="image/*" capture="environment" onchange="loadImg(this)">
 
-<!-- 图像来源选择弹窗 -->
+<!-- 纯图标模式的来源选择弹窗 -->
 <div id="imageSourceModal" class="modal">
-    <div class="modal-content" style="max-width:320px; text-align:center;">
-        <div class="modal-header">
-            <span id="t-pickSourceTitle">选择图像方式</span>
+    <div class="modal-content" style="max-width:240px; text-align:center; padding:15px 20px;">
+        <div class="modal-header" style="justify-content:flex-end; border-bottom:none; padding-bottom:0; margin-bottom:5px;">
             <button class="close-btn" onclick="closeModal('imageSourceModal')">&times;</button>
         </div>
-        <div class="photo-picker-box">
-            <button class="picker-option-btn" onclick="triggerCamera()">
-                📷 <span>现场拍照拍摄</span>
-            </button>
-            <button class="picker-option-btn" onclick="triggerAlbum()">
-                📁 <span>从手机相册选取</span>
-            </button>
+        <div class="icon-only-picker">
+            <button class="icon-picker-btn" onclick="triggerAlbum()" title="相册">📁</button>
+            <button class="icon-picker-btn" onclick="triggerCamera()" title="拍照">📷</button>
         </div>
     </div>
 </div>
@@ -291,42 +566,44 @@
         </div>
     `;
 
-    // 全语言字典：去掉“在线”，统一为“TAD测量”应用
+    // 8 种语言完整对齐字典（包含全面准确的操作指南与四项核心指南表）
     const i18n = {
         'de': {
-            topTitle: "TAD Messung", scaleLabel: "Skala:", btnSelectImg: "📂 Bild / Kamera", btnUsage: "Anleitung ▼", menuUsage: "Nutzung", menuAbout: "Über", totalTadLabel: "Gesamt TAD", legendRef: "Skala (Kalib.)", legendMea: "Messung (Daten)", tabAp: "AP-Ansicht", tabLat: "Lat-Ansicht", modalUsageTitle: "Bedienungsanleitung & Klinische Leitlinien", modalAboutTitle: "Über das System",
+            topTitle: "TAD Messung", scaleLabel: "Skala:", btnSelectImg: "📂 Bild wählen", btnUsage: "Anleitung ▼", menuUsage: "Nutzung", menuAbout: "Über", totalTadLabel: "Gesamt TAD", legendRef: "Skala (Kalib.)", legendMea: "Messung (Daten)", tabAp: "AP-Ansicht", tabLat: "Lat-Ansicht", modalUsageTitle: "Bedienungsanleitung & Klinische Leitlinien", modalAboutTitle: "Über das System",
             riskCutOut: "⚠️ Warnung: Cut-Out-Risiko der Schraube (TAD > 25mm)", riskCutThrough: "❌ Risiko: Gelenkpenetrationsrisiko (Gesamt-TAD < 10mm)", riskApPenetration: "❌ Risiko: AP-Schraubenpenetrationsrisiko (Abstand ≤ 4mm)", riskLatPenetration: "❌ Risiko: Lat-Schraubenpenetrationsrisiko (Abstand ≤ 4mm)",
             usageContent: `
                 <p><strong>Schritt 1: Skalenparameter bestätigen/ändern</strong><br>Geben Sie den bekannten tatsächlichen Durchmesser des Implantats oben in das Feld "Skala" ein (Standard ist 16.0 mm für proximale Oberschenkelnägel).</p>
                 <p><strong>Schritt 2: AP-Ansicht messen</strong><br>
-                • Klicken Sie auf "AP-Ansicht" und importieren oder fotografieren Sie das AP-Röntgenbild.<br>
+                • Klicken Sie auf "AP-Ansicht" und wählen Sie das AP-Röntgenbild über Album oder Kamera aus.<br>
                 • <strong>Skala kalibrieren:</strong> Ziehen Sie die gelben Linienpunkte präzise auf die Struktur mit bekanntem Durchmesser.<br>
                 • <strong>Tip-Apex-Distanz messen:</strong> Ziehen Sie die rosa Linienpunkte: ein Ende an die Schraubenspitze, das andere an den Schnittpunkt von Schenkelhalsachse und Hüftkopfoberfläche.<br>
                 • Das Feld "Gesamt TAD" zeigt den aktuellen TAD-Wert an.</p>
                 <p><strong>Diagramm zur korrekten Markierung:</strong></p>
                 <img src="guide.png" alt="Markierung" />
                 <p><strong>Schritt 3: Laterale Ansicht (Lat) messen</strong><br>
-                • Wechseln Sie zur "Lat-Ansicht" und wählen Sie das Lat-Bild aus.<br>
+                • Wechseln Sie zur "Lat-Ansicht" und importieren Sie das Lat-Bild.<br>
                 • Wiederholen Sie die Ausrichtung der gelben Skala und der rosa Messlinie wie in Schritt 2.<br>
                 • Das Feld "Gesamt TAD" zeigt den kumulierten TAD-Wert (AP + Lat) an.</p>
                 <p><strong>Risikowarnung & Klinische Leitlinien:</strong></p>
                 <table class="guide-table">
                     <tr><th>Metrik</th><th>Ergebnis</th><th>Status</th><th>Klinischer Hinweis</th></tr>
                     <tr><td>Standard</td><td>10.0 mm ≤ Gesamt TAD ≤ 25.0 mm</td><td><span style="color:#00ff00;">Grün</span></td><td>Ideal: Gute Positionierung, sehr geringes Cut-Out-Risiko.</td></tr>
-                    <tr><td>TAD Zu Hoch</td><td>Gesamt TAD > 25.0 mm</td><td><span style="color:#ff4444;">Rot</span></td><td>⚠️ Warnung: Hohes Cut-Out-Risiko der Schraube.</td></tr>
+                    <tr><td>TAD Zu Hoch</td><td>Gesamt TAD > 25.0 mm</td><td><span style="color:#ff4444;">Rot</span></td><td>⚠️ Warnung: Hohes Cut-Out-Risiko der Schraube. Fehltagswahrscheinlichkeit erhöht.</td></tr>
                     <tr><td>TAD Zu Niedrig</td><td>Gesamt TAD < 10.0 mm (Beide gemessen)</td><td><span style="color:#ff4444;">Rot</span></td><td>❌ Risiko: Risiko einer Gelenkpenetration. Schraube sitzt zu tief.</td></tr>
                     <tr><td>Einzelseite</td><td>AP oder Lat ≤ 4.0 mm</td><td><span style="color:#ff4444;">Rot</span></td><td>❌ Risiko: Schraubenspitze zu nah an der kortikalen Oberfläche.</td></tr>
                 </table>
             ` + refHtml,
             aboutContent: `
                 <p><strong>TAD Präzisions-Messsystem</strong> ist ein leichtes Offline-Werkzeug für Osteosynthesen bei pertrochantären und Schenkelhalsfrakturen (PFNA, DHS, Gamma-Nagel, FNS usw.).</p>
+                <p><strong>Kernfunktion:</strong> Präzise Berechnung der Tip-Apex-Distanz (TAD) von Lag-Schrauben über AP- und Lat-Röntgenbilder.</p>
                 <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
                 <p><strong>Autor:</strong> Yunmei Li</p>
+                <p><strong>Adresse:</strong> Abt. für Hüfttraumatologie, Cangzhou Hospital of Integrative Medicine, Hebei, China</p>
                 <p><strong>E-MAIL:</strong> laomei1999@hotmail.com</p>
             `
         },
         'en': {
-            topTitle: "TAD Measurement", scaleLabel: "Scale:", btnSelectImg: "📂 Image / Camera", btnUsage: "User Guide ▼", menuUsage: "Usage", menuAbout: "About", totalTadLabel: "Total TAD", legendRef: "Scale (Calib)", legendMea: "Measure (Data)", tabAp: "AP View", tabLat: "Lateral View", modalUsageTitle: "User Guide & Clinical Reference", modalAboutTitle: "About System",
+            topTitle: "TAD Measurement", scaleLabel: "Scale:", btnSelectImg: "📂 Select Image", btnUsage: "User Guide ▼", menuUsage: "Usage", menuAbout: "About", totalTadLabel: "Total TAD", legendRef: "Scale (Calib)", legendMea: "Measure (Data)", tabAp: "AP View", tabLat: "Lateral View", modalUsageTitle: "User Guide & Clinical Reference", modalAboutTitle: "About System",
             riskCutOut: "⚠️ Warning: Risk of screw cut-out (TAD > 25mm)", riskCutThrough: "❌ Risk: Risk of joint penetration (Total TAD < 10mm)", riskApPenetration: "❌ Risk: AP screw penetration risk (Distance ≤ 4mm)", riskLatPenetration: "❌ Risk: Lateral screw penetration risk (Distance ≤ 4mm)",
             usageContent: `
                 <p><strong>Step 1: Confirm/Modify Scale Parameter</strong><br>Enter the known actual diameter of the implant in the top "Scale" box (default is 16.0 mm for proximal femoral nail).</p>
@@ -339,7 +616,7 @@
                 <img src="guide.png" alt="Marking Diagram" />
                 <p><strong>Step 3: Measure Lateral View Image</strong><br>
                 • Click to switch to "Lateral View" Tab.<br>
-                • Repeat yellow scale & pink measurement line alignment as Step 2.<br>
+                • Import Lateral X-ray and repeat yellow scale & pink measurement line alignment as Step 2.<br>
                 • "Total TAD" section will show total TAD (AP + Lateral).</p>
                 <p><strong>Risk Warning & Clinical Guidelines:</strong></p>
                 <table class="guide-table">
@@ -351,48 +628,146 @@
                 </table>
             ` + refHtml,
             aboutContent: `
-                <p><strong>TAD Orthopedic Precision Measurement System</strong> is a lightweight tool designed for intertrochanteric and femoral neck fracture fixations (PFNA, DHS, Gamma Nail, FNS, etc.).</p>
+                <p><strong>TAD Orthopedic Precision Measurement System</strong> is a lightweight offline tool designed for intertrochanteric and femoral neck fracture fixations (PFNA, DHS, Gamma Nail, FNS, etc.).</p>
+                <p><strong>Core Function:</strong> Accurately calculate the Tip-Apex Distance (TAD) of lag screws via C-arm AP and Lateral X-rays.</p>
+                <p><strong>Clinical Value:</strong> TAD is the gold standard for evaluating implant placement and predicting screw cut-out risk.</p>
                 <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
                 <p><strong>Author:</strong> Yunmei Li</p>
+                <p><strong>Address:</strong> Dept. of Hip Trauma, Cangzhou Hospital of Integrative Medicine, Hebei, China</p>
                 <p><strong>EMAIL:</strong> laomei1999@hotmail.com</p>
             `
         },
         'es': {
-            topTitle: "Medición TAD", scaleLabel: "Escala:", btnSelectImg: "📂 Imagen / Cámara", btnUsage: "Guía ▼", menuUsage: "Uso", menuAbout: "Acerca de", totalTadLabel: "TAD Total", legendRef: "Escala (Calib)", legendMea: "Medición (Datos)", tabAp: "Vista AP", tabLat: "Vista Lat", modalUsageTitle: "Guía de Uso y Referencia Clínica", modalAboutTitle: "Acerca del Sistema",
+            topTitle: "Medición TAD", scaleLabel: "Escala:", btnSelectImg: "📂 Seleccionar", btnUsage: "Guía ▼", menuUsage: "Uso", menuAbout: "Acerca de", totalTadLabel: "TAD Total", legendRef: "Escala (Calib)", legendMea: "Medición (Datos)", tabAp: "Vista AP", tabLat: "Vista Lat", modalUsageTitle: "Guía de Uso y Referencia Clínica", modalAboutTitle: "Acerca del Sistema",
             riskCutOut: "⚠️ Advertencia: Riesgo de corte de tornillo (TAD > 25mm)", riskCutThrough: "❌ Riesgo: Penetración articular (TAD < 10mm)", riskApPenetration: "❌ Riesgo: Penetración AP (≤ 4mm)", riskLatPenetration: "❌ Riesgo: Penetración Lat (≤ 4mm)",
             usageContent: `
-                <p><strong>Paso 1: Ajustar parámetro de escala</strong><br>Ingrese el diámetro real conocido del implante (por defecto 16.0 mm).</p>
+                <p><strong>Paso 1: Confirmar parámetro de escala</strong><br>Ingrese el diámetro real conocido del implante en la casilla "Escala" (por defecto 16.0 mm para clavos femorales proximales).</p>
                 <p><strong>Paso 2: Medir en vista AP</strong><br>
-                • Seleccione "Vista AP" e importe o tome una foto de la radiografía.<br>
-                • Calibre la línea amarilla y ajuste la línea rosa de medición.<br>
+                • Seleccione la pestaña "Vista AP" e importe o tome una foto de la radiografía AP.<br>
+                • <strong>Calibrar escala:</strong> Arrastre los extremos amarillos sobre el diámetro conocido.<br>
+                • <strong>Medir TAD:</strong> Alinee la línea rosa desde la punta del tornillo hasta la intersección de la superficie de la cabeza femoral.<br>
                 • Verá el TAD del AP en la pantalla.</p>
                 <p><strong>Diagrama de marcado correcto:</strong></p>
                 <img src="guide.png" alt="Diagrama" />
                 <p><strong>Paso 3: Medir en vista Lateral (Lat)</strong><br>
-                • Repita en vista lateral para obtener el TAD total.</p>
+                • Cambie a la pestaña "Vista Lat" e importe la radiografía Lateral.<br>
+                • Repita los ajustes de la línea amarilla de escala y línea rosa de medición.<br>
+                • El marcador "TAD Total" mostrará la suma acumulada (AP + Lateral).</p>
+                <p><strong>Guía Clínica y Advertencias:</strong></p>
+                <table class="guide-table">
+                    <tr><th>Métrica</th><th>Resultado</th><th>Estado</th><th>Guía Clínica</th></tr>
+                    <tr><td>Estándar</td><td>10.0 mm ≤ TAD Total ≤ 25.0 mm</td><td><span style="color:#00ff00;">Verde</span></td><td>Ideal: Buena posición, riesgo de corte (cut-out) muy bajo.</td></tr>
+                    <tr><td>TAD Alto</td><td>TAD Total > 25.0 mm</td><td><span style="color:#ff4444;">Rojo</span></td><td>⚠️ Advertencia: Alto riesgo de corte de tornillo. Tasa de fallo elevada.</td></tr>
+                    <tr><td>TAD Bajo</td><td>TAD Total < 10.0 mm (Ambos medidos)</td><td><span style="color:#ff4444;">Rojo</span></td><td>❌ Riesgo: Riesgo de penetración articular. Tornillo demasiado profundo.</td></tr>
+                    <tr><td>Vista Única</td><td>AP o Lat ≤ 4.0 mm</td><td><span style="color:#ff4444;">Rojo</span></td><td>❌ Riesgo: Punta del tornillo muy cerca de la superficie cortical.</td></tr>
+                </table>
             ` + refHtml,
-            aboutContent: `<p><strong>Sistema TAD</strong> para fracturas de cadera.</p><p><strong>Autor:</strong> Yunmei Li</p><p><strong>EMAIL:</strong> laomei1999@hotmail.com</p>`
+            aboutContent: `
+                <p><strong>Sistema de Medición de Precisión Ortopédica TAD</strong> es una herramienta ligera para fracturas de cadera (PFNA, DHS, Gamma Nail, FNS, etc.).</p>
+                <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
+                <p><strong>Autor:</strong> Yunmei Li</p>
+                <p><strong>Dirección:</strong> Hosp. de Medicina Integrativa de Cangzhou, Hebei, China</p>
+                <p><strong>EMAIL:</strong> laomei1999@hotmail.com</p>
+            `
         },
         'fr': {
-            topTitle: "Mesure TAD", scaleLabel: "Échelle:", btnSelectImg: "📂 Image / Appareil", btnUsage: "Guide ▼", menuUsage: "Utilisation", menuAbout: "À propos", totalTadLabel: "TAD Total", legendRef: "Échelle (Étalon)", legendMea: "Mesure (Donnée)", tabAp: "Vue AP", tabLat: "Vue Lat", modalUsageTitle: "Guide d'Utilisation", modalAboutTitle: "À Propos",
-            riskCutOut: "⚠️ Risque de balayage (TAD > 25mm)", riskCutThrough: "❌ Risque de pénétration articulaire (TAD < 10mm)", riskApPenetration: "❌ Risque AP (≤ 4mm)", riskLatPenetration: "❌ Risque Lat (≤ 4mm)",
-            usageContent: `<p><strong>Schéma de marquage :</strong></p><img src="guide.png" alt="Schéma" />` + refHtml,
-            aboutContent: `<p><strong>Auteur :</strong> Yunmei Li</p><p><strong>EMAIL :</strong> laomei1999@hotmail.com</p>`
+            topTitle: "Mesure TAD", scaleLabel: "Échelle:", btnSelectImg: "📂 Sélectionner", btnUsage: "Guide ▼", menuUsage: "Utilisation", menuAbout: "À propos", totalTadLabel: "TAD Total", legendRef: "Échelle (Étalon)", legendMea: "Mesure (Donnée)", tabAp: "Vue AP", tabLat: "Vue Lat", modalUsageTitle: "Guide d'Utilisation & Références Cliniques", modalAboutTitle: "À Propos du Système",
+            riskCutOut: "⚠️ Attention : Risque de balayage de la vis (TAD > 25mm)", riskCutThrough: "❌ Risque : Risque de pénétration articulaire (TAD Total < 10mm)", riskApPenetration: "❌ Risque : Risque de pénétration AP (Distance ≤ 4mm)", riskLatPenetration: "❌ Risque : Risque de pénétration Lat (Distance ≤ 4mm)",
+            usageContent: `
+                <p><strong>Étape 1 : Confirmer/Modifier l'échelle</strong><br>Entrez le diamètre réel connu de l'implant dans la case "Échelle" (par défaut 16,0 mm).</p>
+                <p><strong>Étape 2 : Mesurer la vue AP</strong><br>
+                • Cliquez sur la vue AP, importez ou prenez en photo la radiographie AP.<br>
+                • <strong>Étalonner :</strong> Ajustez la ligne jaune sur la structure de diamètre connu.<br>
+                • <strong>Mesurer le TAD :</strong> Positionnez la ligne rose du centre de la pointe de la vis à la surface de la tête fémorale.<br>
+                • La case "TAD Total" affiche le TAD de la vue actuelle.</p>
+                <p><strong>Schéma de marquage correct :</strong></p>
+                <img src="guide.png" alt="Schéma" />
+                <p><strong>Étape 3 : Mesurer la vue Latérale (Lat)</strong><br>
+                • Passez à l'onglet "Vue Lat". Importez l'image Latérale.<br>
+                • Alignez à nouveau la ligne jaune et la ligne rose.<br>
+                • La valeur "TAD Total" affichera le total cumulé (AP + Lat).</p>
+                <p><strong>Directives Cliniques et Risques :</strong></p>
+                <table class="guide-table">
+                    <tr><th>Métrique</th><th>Résultat</th><th>Statut</th><th>Conseil Clinique</th></tr>
+                    <tr><td>Standard</td><td>10,0 mm ≤ TAD Total ≤ 25,0 mm</td><td><span style="color:#00ff00;">Vert</span></td><td>Idéal : Bonne position, risque de balayage très faible.</td></tr>
+                    <tr><td>TAD Élevé</td><td>TAD Total > 25,0 mm</td><td><span style="color:#ff4444;">Rouge</span></td><td>⚠️ Attention : Risque élevé de balayage (cut-out).</td></tr>
+                    <tr><td>TAD Faible</td><td>TAD Total < 10,0 mm (Mesurés)</td><td><span style="color:#ff4444;">Rouge</span></td><td>❌ Risque : Pénétration articulaire. Vis trop profonde.</td></tr>
+                    <tr><td>Vue Unique</td><td>AP ou Lat ≤ 4,0 mm</td><td><span style="color:#ff4444;">Rouge</span></td><td>❌ Risque : Pointe de la vis trop proche de la corticale.</td></tr>
+                </table>
+            ` + refHtml,
+            aboutContent: `
+                <p><strong>Système de Mesure Orthopédique TAD</strong> est un outil autonome d'aide à la décision peropératoire et postopératoire.</p>
+                <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
+                <p><strong>Auteur :</strong> Yunmei Li</p>
+                <p><strong>EMAIL :</strong> laomei1999@hotmail.com</p>
+            `
         },
         'pt': {
-            topTitle: "Medição TAD", scaleLabel: "Escala:", btnSelectImg: "📂 Imagem / Câmera", btnUsage: "Guia ▼", menuUsage: "Uso", menuAbout: "Sobre", totalTadLabel: "TAD Total", legendRef: "Escala (Calib)", legendMea: "Medição (Dados)", tabAp: "Vista AP", tabLat: "Vista Lat", modalUsageTitle: "Guia do Usuário", modalAboutTitle: "Sobre",
-            riskCutOut: "⚠️ Risco de cut-out (TAD > 25mm)", riskCutThrough: "❌ Penetração articular (TAD < 10mm)", riskApPenetration: "❌ AP (≤ 4mm)", riskLatPenetration: "❌ Lat (≤ 4mm)",
-            usageContent: `<p><strong>Diagrama:</strong></p><img src="guide.png" alt="Diagrama" />` + refHtml,
-            aboutContent: `<p><strong>Autor:</strong> Yunmei Li</p><p><strong>EMAIL:</strong> laomei1999@hotmail.com</p>`
+            topTitle: "Medição TAD", scaleLabel: "Escala:", btnSelectImg: "📂 Selecionar", btnUsage: "Guia ▼", menuUsage: "Uso", menuAbout: "Sobre", totalTadLabel: "TAD Total", legendRef: "Escala (Calib)", legendMea: "Medição (Dados)", tabAp: "Vista AP", tabLat: "Vista Lat", modalUsageTitle: "Guia do Usuário e Diretrizes Clínicas", modalAboutTitle: "Sobre o Sistema",
+            riskCutOut: "⚠️ Aviso: Risco de cut-out do parafuso (TAD > 25mm)", riskCutThrough: "❌ Risco: Risco de penetração articular (TAD Total < 10mm)", riskApPenetration: "❌ Risco: Penetração no AP (Distância ≤ 4mm)", riskLatPenetration: "❌ Risco: Penetração no Lat (Distância ≤ 4mm)",
+            usageContent: `
+                <p><strong>Passo 1: Confirmar parâmetro da escala</strong><br>Insira o diâmetro real conhecido no campo "Escala" no topo (padrão 16,0 mm).</p>
+                <p><strong>Passo 2: Medir imagem em vista AP</strong><br>
+                • Clique na aba "Vista AP" e importe ou fotografe a radiografia AP.<br>
+                • <strong>Calibrar Escala:</strong> Ajuste as pontas da linha amarela na largura do implante de tamanho conhecido.<br>
+                • <strong>Medir TAD:</strong> Ajuste a linha rosa do centro da ponta do parafuso até a superfície da cabeça femoral.<br>
+                • O resultado do AP aparecerá no topo.</p>
+                <p><strong>Diagrama de marcação correta :</strong></p>
+                <img src="guide.png" alt="Diagrama" />
+                <p><strong>Passo 3: Medir imagem em vista Lateral (Lat)</strong><br>
+                • Mude para a aba "Vista Lat". Importe o raio-X Lateral.<br>
+                • Repita o alinhamento das linhas amarela e rosa.<br>
+                • "TAD Total" exibirá o valor acumulado final (AP + Lateral).</p>
+                <p><strong>Avisos de Risco e Guias Clínicos:</strong></p>
+                <table class="guide-table">
+                    <tr><th>Métrica</th><th>Resultado</th><th>Status</th><th>Orientação Clínica</th></tr>
+                    <tr><td>Padrão</td><td>10.0 mm ≤ TAD Total ≤ 25.0 mm</td><td><span style="color:#00ff00;">Verde</span></td><td>Ideal: Boa posição, risco de cut-out muito baixo.</td></tr>
+                    <tr><td>TAD Alto</td><td>TAD Total > 25.0 mm</td><td><span style="color:#ff4444;">Vermelho</span></td><td>⚠️ Aviso: Alto risco de falha / cut-out do parafuso.</td></tr>
+                    <tr><td>TAD Baixo</td><td>TAD Total < 10.0 mm (Ambos)</td><td><span style="color:#ff4444;">Vermelho</span></td><td>❌ Risco: Risco de penetração articular. Parafuso muito fundo.</td></tr>
+                    <tr><td>Vista Única</td><td>AP ou Lat ≤ 4.0 mm</td><td><span style="color:#ff4444;">Vermelho</span></td><td>❌ Risco: Ponta do parafuso muito próxima da cortical.</td></tr>
+                </table>
+            ` + refHtml,
+            aboutContent: `
+                <p><strong>Sistema de Medição de Precisão Ortopédica TAD</strong> é uma ferramenta offline para osteossínteses de fêmur proximal.</p>
+                <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
+                <p><strong>Autor:</strong> Yunmei Li</p>
+                <p><strong>EMAIL:</strong> laomei1999@hotmail.com</p>
+            `
         },
         'ja': {
-            topTitle: "TAD測定", scaleLabel: "スケール:", btnSelectImg: "📂 画像 / カメラ", btnUsage: "使用方法 ▼", menuUsage: "使い方", menuAbout: "概要", totalTadLabel: "合計 TAD", legendRef: "校正線", legendMea: "測定線", tabAp: "正面(AP)", tabLat: "側面(Lat)", modalUsageTitle: "使用方法と臨床的意義", modalAboutTitle: "システムについて",
-            riskCutOut: "⚠️ スクリューのカットアウトリスク (TAD > 25mm)", riskCutThrough: "❌ 関節穿孔リスク (合計TAD < 10mm)", riskApPenetration: "❌ 正面像穿孔リスク (≤ 4mm)", riskLatPenetration: "❌ 側面像穿孔リスク (≤ 4mm)",
-            usageContent: `<p><strong>正しいマーキングの例：</strong></p><img src="guide.png" alt="マーキング例" />` + refHtml,
-            aboutContent: `<p><strong>制作者:</strong> 李運美 (Yunmei Li)</p><p><strong>EMAIL:</strong> laomei1999@hotmail.com</p>`
+            topTitle: "TAD測定", scaleLabel: "スケール:", btnSelectImg: "📂 画像選択", btnUsage: "使用方法 ▼", menuUsage: "使い方", menuAbout: "概要", totalTadLabel: "合計 TAD", legendRef: "校正線(スケール)", legendMea: "測定線(データ)", tabAp: "正面(AP)", tabLat: "側面(Lat)", modalUsageTitle: "使用方法と臨床的意義", modalAboutTitle: "システムについて",
+            riskCutOut: "⚠️ 警告：スクリューのカットアウトのリスク (TAD > 25mm)", riskCutThrough: "❌ リスク：関節穿孔のリスク (合計TAD < 10mm)", riskApPenetration: "❌ リスク：正面像スクリュー穿孔リスク (距離 ≤ 4mm)", riskLatPenetration: "❌ リスク：側面像スクリュー穿孔リスク (距離 ≤ 4mm)",
+            usageContent: `
+                <p><strong>ステップ 1: スケール設定</strong><br>画面上部の「スケール」欄にインプラントの既知の直径（既定値 16.0 mm）を入力します。</p>
+                <p><strong>ステップ 2: 正面像 (AP) の測定</strong><br>
+                • 「正面(AP)」タブを選択し、アルバムまたはカメラからX線画像を読み込みます。<br>
+                • <strong>スケール校正:</strong> 黄色の線の両端を既知の直径に正確に合わせます。<br>
+                • <strong>TAD 測定:</strong> ピンクの線の片端をスクリュー先端の中心に、もう片端を骨頭表面の交点に合わせます。<br>
+                • 上部に正面像のTADが表示されます。</p>
+                <p><strong>正しいマーキングの例：</strong></p>
+                <img src="guide.png" alt="マーキング例" />
+                <p><strong>ステップ 3: 側面像 (Lat) の測定</strong><br>
+                • 「側面(Lat)」タブに切り替え、側面像のX線を読み込みます。<br>
+                • 黄色とピンクの線を同様に合わせます。<br>
+                • 「合計 TAD」欄に正面＋側面の合計値が表示されます。</p>
+                <p><strong>リスク警告および臨床ガイドライン：</strong></p>
+                <table class="guide-table">
+                    <tr><th>指標</th><th>測定結果</th><th>ステータス</th><th>臨床的指導</th></tr>
+                    <tr><td>標準範囲</td><td>10.0 mm ≤ 合計 TAD ≤ 25.0 mm</td><td><span style="color:#00ff00;">緑色</span></td><td>理想的：位置良好、カットアウトリスク極めて低い。</td></tr>
+                    <tr><td>TAD過大</td><td>合計 TAD > 25.0 mm</td><td><span style="color:#ff4444;">赤色</span></td><td>⚠️ 警告：カットアウトのリスクが高い状態です。固定不全率が増加します。</td></tr>
+                    <tr><td>TAD過小</td><td>合計 TAD < 10.0 mm (両方測定時)</td><td><span style="color:#ff4444;">赤色</span></td><td>❌ リスク：関節穿孔のリスクがあります。深く挿入され過ぎています。</td></tr>
+                    <tr><td>単一方向</td><td>正面または側面 ≤ 4.0 mm</td><td><span style="color:#ff4444;">赤色</span></td><td>❌ リスク：スクリュー先端が骨皮質に近すぎます。</td></tr>
+                </table>
+            ` + refHtml,
+            aboutContent: `
+                <p><strong>TAD 整形外科精密測定システム</strong>は、大腿骨転子部および頸部骨折の手術用に設計されたオフライン測定ツールです。</p>
+                <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
+                <p><strong>制作者:</strong> 李運美 (Yunmei Li)</p>
+                <p><strong>E-MAIL:</strong> laomei1999@hotmail.com</p>
+            `
         },
         'zh-CN': {
-            topTitle: "TAD测量", scaleLabel: "标尺:", btnSelectImg: "📂 导入/拍摄图像", btnUsage: "使用方法 ▼", menuUsage: "用法", menuAbout: "关于", totalTadLabel: "总 TAD", legendRef: "标尺(校准)", legendMea: "测量(数据)", tabAp: "正位", tabLat: "侧位", modalUsageTitle: "使用方法及参考意义", modalAboutTitle: "关于系统",
+            topTitle: "TAD测量", scaleLabel: "标尺:", btnSelectImg: "📂 选择图片", btnUsage: "使用方法 ▼", menuUsage: "用法", menuAbout: "关于", totalTadLabel: "总 TAD", legendRef: "标尺(校准)", legendMea: "测量(数据)", tabAp: "正位", tabLat: "侧位", modalUsageTitle: "使用方法及参考意义", modalAboutTitle: "关于系统",
             riskCutOut: "⚠️ 警告：螺钉切出风险 (TAD > 25mm)", riskCutThrough: "❌ 风险：螺钉穿出风险 (总TAD < 10mm)", riskApPenetration: "❌ 风险：正位螺钉穿出风险 (距离 ≤ 4mm)", riskLatPenetration: "❌ 风险：侧位螺钉穿出风险 (距离 ≤ 4mm)",
             usageContent: `
                 <p><strong>步骤 1：确认/修改标尺参数</strong><br>在顶部左上角“标尺”框中输入植入物的已知实际直径（默认是股骨近端髓内钉的近端16.0 mm ）。</p>
@@ -426,22 +801,36 @@
             `
         },
         'zh-TW': {
-            topTitle: "TAD測量", scaleLabel: "標尺:", btnSelectImg: "📂 導入/拍攝圖像", btnUsage: "使用方法 ▼", menuUsage: "用法", menuAbout: "關於", totalTadLabel: "總 TAD", legendRef: "標尺(校準)", legendMea: "測量(數據)", tabAp: "正位", tabLat: "側位", modalUsageTitle: "使用方法及參考意義", modalAboutTitle: "關於系統",
+            topTitle: "TAD測量", scaleLabel: "標尺:", btnSelectImg: "📂 選擇圖片", btnUsage: "使用方法 ▼", menuUsage: "用法", menuAbout: "關於", totalTadLabel: "總 TAD", legendRef: "標尺(校準)", legendMea: "測量(數據)", tabAp: "正位", tabLat: "側位", modalUsageTitle: "使用方法及參考意義", modalAboutTitle: "關於系統",
             riskCutOut: "⚠️ 警告：螺釘切出風險 (TAD > 25mm)", riskCutThrough: "❌ 風險：螺釘穿出風險 (總TAD < 10mm)", riskApPenetration: "❌ 風險：正位螺釘穿出風險 (距離 ≤ 4mm)", riskLatPenetration: "❌ 風險：側位螺釘穿出風險 (距離 ≤ 4mm)",
             usageContent: `
-                <p><strong>步驟 1：確認/修改標尺參數</strong><br>在頂部“標尺”方塊中輸入已知植入物的實際直徑（預設 16.0 mm）。</p>
+                <p><strong>步驟 1：確認/修改標尺參數</strong><br>在頂部左上角“標尺”方塊中輸入植入物的已知實際直徑（預設為股骨近端髓內釘近端 16.0 mm）。</p>
                 <p><strong>步驟 2：測量正位 (AP) 圖像</strong><br>
-                • 點擊選擇“正位”Tab，導入或拍照正位 X 光片。<br>
-                • <strong>校準標尺：</strong>拖動黃色線手柄對準已知直徑結構。<br>
-                • <strong>測量 TAD：</strong>拖動粉色線，一端放在螺釘尖端，另一端放在股骨頭表面交點。<br>
-                • 頂部欄會顯示目前正位 TAD。</p>
+                • 點擊選擇“正位”Tab 標籤，從相簿選取或現場拍照導入正位 X 光片。<br>
+                • <strong>校準標尺：</strong>拖動黃色線兩端手柄，使其精準對準圖像中已知直徑的內固定物結構。<br>
+                • <strong>測量尖頂距：</strong>拖動粉色線兩端手柄，一端置於螺釘尖端中心，另一端置於股骨頸軸線與股骨頭表面交點。<br>
+                • 頂部欄將顯示目前圖像 TAD。</p>
                 <p><strong>正確標記示意圖：</strong></p>
                 <img src="guide.png" alt="標記示意圖" />
                 <p><strong>步驟 3：測量側位 (Lat) 圖像</strong><br>
-                • 切換至側位 Tab，重複步驟 2 校準黃線与粉線。<br>
-                • “總 TAD”欄位將顯示正位+側位的總和。</p>
+                • 點擊切換至 側位 Tab 標籤，導入或拍攝側位 X 光片。<br>
+                • 重複步驟 2 校準黃色標尺與粉色測量線。<br>
+                • 在“總TAD”欄位將顯示正位 (AP)+側位 (Lat) 圖像的總 TAD。</p>
+                <p><strong>風險預警與臨床指南：</strong></p>
+                <table class="guide-table">
+                    <tr><th>評估指標</th><th>測量結果</th><th>顯示狀態</th><th>臨床風險與建議</th></tr>
+                    <tr><td>標準範圍</td><td>10.0 mm ≤ 總 TAD ≤ 25.0 mm</td><td><span style="color:#00ff00;">綠色</span></td><td>理想狀態：螺釘位置良好，切出風險極低。</td></tr>
+                    <tr><td>TAD 偏大</td><td>總 TAD > 25.0 mm</td><td><span style="color:#ff4444;">紅色</span></td><td>⚠️ 警告：螺釘切出風險 (TAD > 25mm)。內固定失敗率顯著增加。</td></tr>
+                    <tr><td>TAD 偏小</td><td>總 TAD < 10.0 mm（雙位均測）</td><td><span style="color:#ff4444;">紅色</span></td><td>❌ 風險：螺釘穿出風險 (總TAD < 10mm)。有穿透股骨頭軟骨面風險。</td></tr>
+                    <tr><td>單側過近</td><td>AP 或 Lat 單項 ≤ 4.0 mm</td><td><span style="color:#ff4444;">紅色</span></td><td>❌ 風險：螺釘尖端距離骨皮質過於偏心或過近。</td></tr>
+                </table>
             ` + refHtml,
-            aboutContent: `<p><strong>作者：</strong>李運美</p><p><strong>EMAIL：</strong>laomei1999@hotmail.com</p>`
+            aboutContent: `
+                <p><strong>TAD 骨科精密測量系統</strong> 是專為股骨粗隆間骨折與股骨頸骨折手術設計的離線測量工具。</p>
+                <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
+                <p><strong>作者：</strong>李運美</p>
+                <p><strong>EMAIL：</strong>laomei1999@hotmail.com</p>
+            `
         }
     };
 
@@ -453,7 +842,6 @@
         applyLanguage(currentLang);
     }
 
-    // 控制下拉菜单开闭，杜绝 touch 误触复弹
     function toggleDropdown(id, e) {
         if (e) {
             e.preventDefault();
@@ -473,7 +861,6 @@
         });
     }
 
-    // 选中语言后，彻底关掉下拉菜单
     function changeLang(langKey) {
         if (!i18n[langKey]) langKey = 'zh-CN';
         currentLang = langKey;
@@ -549,11 +936,11 @@
     }
 
     function createHandle(svg, lineId, idx, x, y, color) {
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        const g = document.createElementNS("[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)", "g");
         g.setAttribute("id", `${lineId}-g${idx}`);
         g.setAttribute("transform", `translate(${x},${y}) rotate(0)`);
 
-        const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+        const poly = document.createElementNS("[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)", "polygon");
         let points = (idx === 1) ? "0,0 -25,-15 -25,15" : "0,0 25,-15 25,15";
         poly.setAttribute("points", points);
         poly.style.fill = color + "66"; 
@@ -561,7 +948,7 @@
         poly.style.strokeWidth = "1.5px";
         poly.setAttribute("class", "handle-shape");
         
-        const hit = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        const hit = document.createElementNS("[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)", "circle");
         hit.setAttribute("r", "40");
         hit.setAttribute("class", "handle-hitbox");
         hit.onpointerdown = (e) => startHDrag(e, lineId, idx, g);
@@ -591,7 +978,7 @@
         ];
 
         configs.forEach(c => {
-            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            const line = document.createElementNS("[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)", "line");
             line.setAttribute("id", c.id);
             line.setAttribute("x1", c.x1); line.setAttribute("y1", c.y1);
             line.setAttribute("x2", c.x2); line.setAttribute("y2", c.y2);
@@ -712,7 +1099,7 @@
         magContent.appendChild(img.cloneNode());
 
         if (magSvg) magSvg.remove();
-        magSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        magSvg = document.createElementNS('[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)', 'svg');
         magSvg.setAttribute('width', '80');
         magSvg.setAttribute('height', '80');
         magSvg.style.position = 'absolute';
@@ -720,14 +1107,14 @@
         magSvg.style.top = '0';
         mag.appendChild(magSvg);
 
-        const center = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        const center = document.createElementNS('[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)', 'circle');
         center.setAttribute('cx', '40');
         center.setAttribute('cy', '40');
         center.setAttribute('r', '3');
         center.setAttribute('fill', 'red');
         magSvg.appendChild(center);
 
-        magLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        magLine = document.createElementNS('[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)', 'line');
         magLine.setAttribute('stroke', strokeColor);
         magLine.setAttribute('stroke-width', '3');
         magLine.setAttribute('stroke-linecap', 'round');
