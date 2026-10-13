@@ -29,6 +29,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // 原生动态权限申请（无 AndroidX 依赖）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{android.Manifest.permission.CAMERA}, PERMISSION_REQ_CODE);
@@ -58,23 +59,32 @@ public class MainActivity extends Activity {
 
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                // 每次调起选择器前，若上一次回调未完成则主动置空释放，避免通道锁死
                 if (uploadMessage != null) {
                     uploadMessage.onReceiveValue(null);
+                    uploadMessage = null;
                 }
                 uploadMessage = filePathCallback;
 
                 boolean isCapture = fileChooserParams.isCaptureEnabled();
                 if (isCapture) {
-                    // 使用 MediaStore 预先申请一个真实的图片存储 Uri，让相机直接写入高清原图
-                    ContentValues values = new ContentValues();
-                    values.put(MediaStore.Images.Media.TITLE, "TAD_" + System.currentTimeMillis());
-                    values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-                    photoUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                    try {
+                        ContentValues values = new ContentValues();
+                        values.put(MediaStore.Images.Media.TITLE, "TAD_" + System.currentTimeMillis());
+                        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+                        photoUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
 
-                    Intent captureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                    captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
-                    startActivityForResult(captureIntent, FILE_CHOOSER_RESULT_CODE);
+                        Intent captureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                        captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+                        startActivityForResult(captureIntent, FILE_CHOOSER_RESULT_CODE);
+                    } catch (Exception e) {
+                        if (uploadMessage != null) {
+                            uploadMessage.onReceiveValue(null);
+                            uploadMessage = null;
+                        }
+                    }
                 } else {
+                    photoUri = null; // 确保进入相册时不残留拍照 Uri
                     Intent contentIntent = new Intent(Intent.ACTION_GET_CONTENT);
                     contentIntent.addCategory(Intent.CATEGORY_OPENABLE);
                     contentIntent.setType("image/*");
@@ -94,10 +104,11 @@ public class MainActivity extends Activity {
             Uri[] results = null;
 
             if (resultCode == RESULT_OK) {
-                // 如果是拍照且 photoUri 存在，则直接使用写入的图片 Uri
+                // 处理拍照返回的高清 Uri
                 if (photoUri != null && (data == null || data.getData() == null)) {
                     results = new Uri[]{photoUri};
                 } else if (data != null) {
+                    // 处理相册返回的媒体 Uri
                     if (data.getClipData() != null) {
                         int count = data.getClipData().getItemCount();
                         results = new Uri[count];
@@ -109,7 +120,7 @@ public class MainActivity extends Activity {
                     }
                 }
             } else {
-                // 如果用户取消拍照，删除预创建的空记录
+                // 用户取消拍照时，清理预生成的空条目
                 if (photoUri != null) {
                     try {
                         getContentResolver().delete(photoUri, null, null);
@@ -117,6 +128,7 @@ public class MainActivity extends Activity {
                 }
             }
 
+            // 回传给 WebView 并彻底解绑状态，确保下一次替换可以无缝执行
             uploadMessage.onReceiveValue(results);
             uploadMessage = null;
             photoUri = null;
