@@ -49,6 +49,7 @@
             font-size: 13px;
         }
         .dropdown-content a:hover { background-color: #007bff; }
+        .dropdown-content.show { display: block; }
         .dropdown:hover .dropdown-content { display: block; }
 
         /* 模态弹窗样式 */
@@ -158,8 +159,8 @@
 <div class="top-nav">
     <div class="top-title" id="t-topTitle">TAD在线测量</div>
     <div class="dropdown">
-        <button class="btn" style="background:#007bff; padding: 4px 10px; font-size: 13px;">🌐 Language ▼</button>
-        <div class="dropdown-content">
+        <button class="btn" style="background:#007bff; padding: 4px 10px; font-size: 13px;" onclick="toggleLangMenu(event)">🌐 Language ▼</button>
+        <div class="dropdown-content" id="langMenu">
             <!-- 严格按首字母 (A-Z) 顺序排列 -->
             <a href="javascript:void(0)" onclick="changeLang('de')">Deutsch (德语)</a>
             <a href="javascript:void(0)" onclick="changeLang('en')">English (英语)</a>
@@ -251,7 +252,7 @@
         </div>
     `;
 
-    // 全量多语言字典
+    // 全量多语言字典：所有示意图均改用本地 assets 内的 "guide.png"
     const i18n = {
         'de': {
             topTitle: "TAD Online-Messung", scaleLabel: "Skala:", btnSelectImg: "📂 Bild wählen", btnUsage: "Anleitung ▼", menuUsage: "Nutzung", menuAbout: "Über", totalTadLabel: "Gesamt TAD", legendRef: "Skala (Kalib.)", legendMea: "Messung (Daten)", tabAp: "AP-Ansicht", tabLat: "Lat-Ansicht", modalUsageTitle: "Bedienungsanleitung & Klinische Leitlinien", modalAboutTitle: "Über das System",
@@ -264,7 +265,7 @@
                 • <strong>Tip-Apex-Distanz messen:</strong> Ziehen Sie die rosa Linienpunkte: ein Ende an die Schraubenspitze, das andere an den Schnittpunkt von Schenkelhalsachse und Hüftkopfoberfläche.<br>
                 • Das Feld "Gesamt TAD" zeigt den aktuellen TAD-Wert an.</p>
                 <p><strong>Diagramm zur korrekten Markierung:</strong></p>
-                <img src="https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEZQO9qgTB2XzR47UvEKwMil_S0pQVCBwACDB8AArHjEFQJojc1keQ7qj0E.png" alt="Markierung" />
+                <img src="guide.png" alt="Markierung" />
                 <p><strong>Schritt 3: Laterale Ansicht (Lat) messen</strong><br>
                 • Wechseln Sie zur "Lat-Ansicht".<br>
                 • Klicken Sie auf 📂 Bild wählen und importieren Sie das Lat-Röntgenbild.<br>
@@ -299,7 +300,7 @@
                 • <strong>Measure Tip-Apex Distance:</strong> Drag the pink line handles, placing one end at the screw tip center and the other at the intersection of femoral neck axis and femoral head surface.<br>
                 • "Total TAD" section will show current image TAD.</p>
                 <p><strong>Correct Marking Diagram:</strong></p>
-                <img src="https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEZQO9qgTB2XzR47UvEKwMil_S0pQVCBwACDB8AArHjEFQJojc1keQ7qj0E.png" alt="Marking Diagram" />
+                <img src="guide.png" alt="Marking Diagram" />
                 <p><strong>Step 3: Measure Lateral View Image</strong><br>
                 • Click to switch to "Lateral View" Tab.<br>
                 • Click 📂 Select Image, import Lateral X-ray.<br>
@@ -335,7 +336,7 @@
                 • <strong>Medir TAD:</strong> Alinee la línea rosa desde la punta del tornillo hasta la intersección en la cabeza femoral.<br>
                 • Verá el TAD del AP en la pantalla.</p>
                 <p><strong>Diagrama de marcado correcto:</strong></p>
-                <img src="https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEZQO9qgTB2XzR47UvEKwMil_S0pQVCBwACDB8AArHjEFQJojc1keQ7qj0E.png" alt="Diagrama" />
+                <img src="guide.png" alt="Diagrama" />
                 <p><strong>Paso 3: Medir en vista Lateral (Lat)</strong><br>
                 • Cambie a la pestaña "Vista Lat". Importe la radiografía Lateral.<br>
                 • Repita los ajustes de la línea amarilla de escala y línea rosa de medición.<br>
@@ -368,7 +369,7 @@
                 • <strong>Mesurer le TAD :</strong> Positionnez la ligne rose du centre de la pointe de la vis à la surface de la tête fémorale.<br>
                 • La case "TAD Total" affiche le TAD de la vue actuelle.</p>
                 <p><strong>Schéma de marquage correct :</strong></p>
-                <img src="https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEZQO9qgTB2XzR47UvEKwMil_S0pQVCBwACDB8AArHjEFQJojc1keQ7qj0E.png" alt="Schéma" />
+                <img src="guide.png" alt="Schéma" />
                 <p><strong>Étape 3 : Mesurer la vue Latérale (Lat)</strong><br>
                 • Passez à l'onglet "Vue Lat". Importez l'image Latérale.<br>
                 • Alignez à nouveau la ligne jaune et la ligne rose.<br>
@@ -401,7 +402,7 @@
                 • <strong>Medir TAD:</strong> Ajuste a linha rosa do centro da ponta do parafuso até a superfície da cabeça femoral.<br>
                 • O resultado do AP aparecerá no topo.</p>
                 <p><strong>Diagrama de marcação correta:</strong></p>
-                <img src="https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEZQO9qgTB2XzR47UvEKwMil_S0pQVCBwACDB8AArHjEFQJojc1keQ7qj0E.png" alt="Diagrama" />
+                <img src="guide.png" alt="Diagrama" />
                 <p><strong>Passo 3: Medir imagem em vista Lateral (Lat)</strong><br>
                 • Mude para a aba "Vista Lat". Importe o raio-X Lateral.<br>
                 • Repita o alinhamento das linhas amarela e rosa.<br>
@@ -433,7 +434,7 @@
                 • <strong>TAD 測定:</strong> ピンクの線の片端をスクリュー先端の中心に、もう片端を骨頭表面の交点に合わせます。<br>
                 • 上部に正面像のTADが表示されます。</p>
                 <p><strong>正しいマーキングの例：</strong></p>
-                <img src="https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEZQO9qgTB2XzR47UvEKwMil_S0pQVCBwACDB8AArHjEFQJojc1keQ7qj0E.png" alt="マーキング例" />
+                <img src="guide.png" alt="マーキング例" />
                 <p><strong>ステップ 3: 側面像 (Lat) の測定</strong><br>
                 • 「側面(Lat)」タブに切り替え、側面像のX線を読み込みます。<br>
                 • 黄色とピンクの線を同様に合わせます。<br>
@@ -466,7 +467,7 @@
                 • <strong>测量尖顶距：</strong>拖动粉色线的两端手柄，一端放在螺钉尖端中心，另一端放在股骨颈轴线与股骨头表面的交点。<br>
                 • 在“总TAD”栏会显示当前图像TAD。</p>
                 <p><strong>正确标记示意图：</strong></p>
-                <img src="https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEZQO9qgTB2XzR47UvEKwMil_S0pQVCBwACDB8AArHjEFQJojc1keQ7qj0E.png" alt="标记示意图" />
+                <img src="guide.png" alt="标记示意图" />
                 <p><strong>步骤 3：测量侧位 (Lat) 图像</strong><br>
                 • 点击切换到 侧位 Tab 标签。<br>
                 • 点击 📂 选择图片，导入侧位 X 片。<br>
@@ -501,7 +502,7 @@
                 • <strong>測量 TAD：</strong>拖動粉色線，一端放在螺釘尖端，另一端放在股骨頭表面交點。<br>
                 • 頂部欄會顯示目前正位 TAD。</p>
                 <p><strong>正確標記示意圖：</strong></p>
-                <img src="https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEZQO9qgTB2XzR47UvEKwMil_S0pQVCBwACDB8AArHjEFQJojc1keQ7qj0E.png" alt="標記示意圖" />
+                <img src="guide.png" alt="標記示意圖" />
                 <p><strong>步驟 3：測量側位 (Lat) 圖像</strong><br>
                 • 切換至側位 Tab，導入側位 X 片。<br>
                 • 重複步驟 2 校準黃線与粉線。<br>
@@ -524,7 +525,6 @@
         }
     };
 
-    // 默认语言直接设定为简体中文 'zh-CN'
     let currentLang = 'zh-CN';
 
     function initLanguage() {
@@ -532,17 +532,34 @@
         if (savedLang && i18n[savedLang]) {
             currentLang = savedLang;
         } else {
-            // 不再跟随浏览器语言（navigator.language），默认锁定简体中文
             currentLang = 'zh-CN';
         }
         applyLanguage(currentLang);
     }
 
+    // 语言菜单切换展开/收起
+    function toggleLangMenu(e) {
+        if (e) e.stopPropagation();
+        const menu = document.getElementById('langMenu');
+        if (menu) {
+            menu.classList.toggle('show');
+        }
+    }
+
+    // 点击语言切换后，自动关闭下拉菜单
     function changeLang(langKey) {
         if (!i18n[langKey]) langKey = 'zh-CN';
         currentLang = langKey;
         localStorage.setItem('tad_lang', langKey);
         applyLanguage(langKey);
+        
+        // 自动收回语言菜单
+        const menu = document.getElementById('langMenu');
+        if (menu) {
+            menu.classList.remove('show');
+            menu.style.display = 'none';
+            setTimeout(() => { menu.style.display = ''; }, 200);
+        }
     }
 
     function applyLanguage(lang) {
@@ -564,7 +581,6 @@
 
         document.getElementById('t-modalUsageBody').innerHTML = dict.usageContent;
         
-        // 渲染关于弹窗及独立部署计步器
         document.getElementById('t-modalAboutBody').innerHTML = dict.aboutContent + `
             <div style="margin-top:15px; padding-top:10px; border-top:1px dashed #444; text-align:center;">
                 <span style="font-size:12px; color:#888;">${dict.visitCountLabel}</span>
@@ -594,9 +610,15 @@
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    
     window.onclick = function(event) {
         if (event.target.classList.contains('modal')) {
             event.target.style.display = 'none';
+        }
+        // 点击页面其他位置也自动收回语言菜单
+        const menu = document.getElementById('langMenu');
+        if (menu && menu.classList.contains('show') && !event.target.closest('.dropdown')) {
+            menu.classList.remove('show');
         }
     };
 
