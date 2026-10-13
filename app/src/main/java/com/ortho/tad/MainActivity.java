@@ -1,6 +1,7 @@
 package com.ortho.tad;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -9,42 +10,17 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     private WebView webView;
     private ValueCallback<Uri[]> uploadMessage;
-    private ActivityResultLauncher<Intent> fileChooserLauncher;
+    private static final int FILE_CHOOSER_RESULT_CODE = 1001;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // 注册相册选图回调，处理 HTML 中的 <input type="file">
-        fileChooserLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (uploadMessage == null) return;
-                Uri[] results = null;
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    if (result.getData().getClipData() != null) {
-                        int count = result.getData().getClipData().getItemCount();
-                        results = new Uri[count];
-                        for (int i = 0; i < count; i++) {
-                            results[i] = result.getData().getClipData().getItemAt(i).getUri();
-                        }
-                    } else if (result.getData().getData() != null) {
-                        results = new Uri[]{result.getData().getData()};
-                    }
-                }
-                uploadMessage.onReceiveValue(results);
-                uploadMessage = null;
-            }
-        );
 
         webView = new WebView(this);
         setContentView(webView);
@@ -56,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setAllowContentAccess(true);
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(true);
-        settings.setSupportZoom(false); // 缩放由 HTML 内的双指手势处理
+        settings.setSupportZoom(false);
 
         webView.setWebViewClient(new WebViewClient());
 
@@ -71,13 +47,35 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
                 intent.setType("image/*");
-                fileChooserLauncher.launch(Intent.createChooser(intent, "选择X光片"));
+                startActivityForResult(Intent.createChooser(intent, "选择X光片"), FILE_CHOOSER_RESULT_CODE);
                 return true;
             }
         });
 
-        // 加载打包在本地 assets 内的离线文件
         webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == FILE_CHOOSER_RESULT_CODE) {
+            if (uploadMessage == null) return;
+            Uri[] results = null;
+            if (resultCode == RESULT_OK && data != null) {
+                if (data.getClipData() != null) {
+                    int count = data.getClipData().getItemCount();
+                    results = new Uri[count];
+                    for (int i = 0; i < count; i++) {
+                        results[i] = data.getClipData().getItemAt(i).getUri();
+                    }
+                } else if (data.getData() != null) {
+                    results = new Uri[]{data.getData()};
+                }
+            }
+            uploadMessage.onReceiveValue(results);
+            uploadMessage = null;
+        } else {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
     }
 
     @Override
