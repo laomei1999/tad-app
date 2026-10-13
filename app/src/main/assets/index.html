@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAD 骨科精密测量系统 v4</title>
+    <title>TAD测量</title>
     <style>
         body { font-family: system-ui, sans-serif; background: #000; color: white; margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         
@@ -24,282 +24,14 @@
         .btn-group { display: flex; gap: 8px; align-items: center; }
         .btn { border: none; padding: 6px 14px; border-radius: 6px; font-size: 14px; color: white; cursor: pointer; background: #444; }
         
-        /* 标尺文字样式：加粗并设定为与黄线完全一致的 #ffff00 */
-        .scale-label-style {
-            color: #ffff00;
-            font-weight: bold;
-        }
-
-        /* 下拉菜单样式 - 移除 CSS hover，完全由 JS 点击事件控制 */
-        .dropdown { position: relative; display: inline-block; }
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            right: 0;
-            top: 100%;
-            background-color: #333;
-            min-width: 140px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
-            z-index: 200;
-            border-radius: 6px;
-            overflow: hidden;
-            border: 1px solid #555;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .dropdown-content.show { display: block; }
-        .dropdown-content a {
-            color: white;
-            padding: 10px 14px;
-            text-decoration: none;
-            display: block;
-            font-size: 13px;
-        }
-        .dropdown-content a:hover, .dropdown-content a:active { background-color: #007bff; }
-
-        /* 模态弹窗样式 */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 2000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.75);
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background-color: #222;
-            color: #eee;
-            padding: 20px;
-            border-radius: 10px;
-            max-width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            border: 1px solid #444;
-            line-height: 1.6;
-            font-size: 14px;
-        }
-        .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid #444; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .close-btn { font-size: 20px; cursor: pointer; color: #aaa; border: none; background: none; }
-        .close-btn:hover { color: #fff; }
-        .modal-body img { max-width: 100%; height: auto; margin: 10px 0; border-radius: 6px; border: 1px solid #555; }
-        
-        /* 表格样式 */
-        .guide-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-        .guide-table th, .guide-table td { border: 1px solid #555; padding: 6px; text-align: left; }
-        .guide-table th { background: #333; }
-
-        /* TAD 结果栏 */
-        .result-bar { background: #111; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        .tad-val { font-size: 28px; font-weight: bold; transition: color 0.3s; }
-        .legend-box { font-size: 11px; color: #ddd; }
-        .legend-item { display: flex; align-items: center; gap: 4px; }
-        .dot { width: 8px; height: 8px; border-radius: 2px; }
-
-        /* 风险提示区 */
-        #riskNotice { font-size: 13px; font-weight: bold; text-align: center; padding: 4px; border-radius: 4px; margin-bottom: 8px; display: none; }
-        .risk-red { color: #ff4444; background: rgba(255, 68, 68, 0.1); }
-
-        /* 标签切换栏 */
-        .tab-bar { display: flex; gap: 4px; background: #444; padding: 3px; border-radius: 8px; }
-        .tab { flex: 1; padding: 8px; text-align: center; background: #333; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 13px; }
-        .tab.active { background: #007bff; color: white; }
-        .tab-val-inline { margin-left: 4px; font-size: 12px; }
-        
-        /* 核心视图布局 */
-        .viewport-wrapper {
-            flex: 1;
-            position: relative;
-            display: flex;
-            overflow: hidden;
-            background: #111;
-        }
-
-        .main-container {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-            background: #111;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            touch-action: none;
-        }
-
-        .viewer-box {
-            display: none;
-            position: relative;
-            transform-origin: top center;
-            margin: 0 auto;
-        }
-        .viewer-box.active { display: block; }
-        .zoom-layer { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
-        img { display: block; user-select: none; pointer-events: none; }
-        svg { touch-action: none; user-select: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; }
-        
-        /* 测量线样式 */
-        .line-ref { stroke: #ffff00; stroke-width: 2.5; }
-        .line-mea { stroke: #ff00ff; stroke-width: 2.5; }
-        .handle-hitbox { fill: transparent; cursor: pointer; }
-
-        /* 放大镜 */
-        #magnifier {
-            position: fixed; width: 80px; height: 80px; border: 2px solid #007bff;
-            border-radius: 50%; overflow: hidden; display: none; z-index: 1000;
-            pointer-events: none; background: #000; box-shadow: 0 0 15px rgba(0,0,0,0.8);
-        }
-        #mag-content { position: absolute; transform-origin: 0 0; }
-        #magnifier::after { content: ""; position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; border: 1px solid #ff0000; transform: translate(-50%, -50%); border-radius: 50%; }
-
-        input[type="file"] { display: none; }
-        .ref-box { margin-top: 15px; padding: 10px; background: #1a1a1a; border-left: 3px solid #007bff; border-radius: 4px; font-size: 11px; word-break: break-word; color: #bbb; }
-
-        /* 仅保留图标的弹窗选择器样式 */
-        .icon-only-picker-box {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 24px;
-            padding: 15px 0 5px 0;
-        }
-        .icon-only-btn {
-            background: #333;
-            border: 1px solid #555;
-            width: 70px;
-            height: 70px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 34px;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-        }
-        .icon-only-btn:active {
-            background: #007bff;
-            transform: scale(0.95);
-        }
-    </style>
-</head>
-<body>
-
-<!-- 顶部导航 -->
-<div class="top-nav">
-    <div class="top-title" id="t-topTitle">TAD测量</div>
-    <div class="dropdown">
-        <button class="btn" style="background:#007bff; padding: 4px 10px; font-size: 13px;" onclick="toggleDropdown('langMenu', event)">🌐 Language ▼</button>
-        <div class="dropdown-content" id="langMenu">
-            <a href="javascript:void(0)" onclick="changeLang('de')">Deutsch (德语)</a>
-            <a href="javascript:void(0)" onclick="changeLang('en')">English (英语)</a>
-            <a href="javascript:void(0)" onclick="changeLang('es')">Español (西班牙语)</a>
-            <a href="javascript:void(0)" onclick="changeLang('fr')">Français (法语)</a>
-            <a href="javascript:void(0)" onclick="changeLang('pt')">Português (葡萄牙语)</a>
-            <a href="javascript:void(0)" onclick="changeLang('ja')">日本語 (日语)</a>
-            <a href="javascript:void(0)" onclick="changeLang('zh-CN')">简体中文</a>
-            <a href="javascript:void(0)" onclick="changeLang('zh-TW')">繁體中文</a>
-        </div>
-    </div>
-</div>
-
-<div class="header">
-    <div class="config-row">
-        <div style="font-size:14px;"><span id="t-scaleLabel" class="scale-label-style">标尺:</span> <input type="number" id="refD" value="16.0" step="0.1" oninput="updateCalc()" style="width:55px; background:#444; color:white; border:none; padding:8px; border-radius:4px; text-align:center; font-weight:bold;"> mm</div>
-        <div class="btn-group">
-            <button class="btn" style="background:#28a745;" onclick="openModal('imageSourceModal')" id="t-btnSelectImg">📂 选择图片</button>
-            <div class="dropdown">
-                <button class="btn" style="background:#17a2b8;" onclick="toggleDropdown('usageDropdown', event)" id="t-btnUsage">使用方法 ▼</button>
-                <div class="dropdown-content" id="usageDropdown">
-                    <a href="javascript:void(0)" onclick="openModal('usageModal'); closeAllDropdowns();" id="t-menuUsage">用法</a>
-                    <a href="javascript:void(0)" onclick="openModal('aboutModal'); closeAllDropdowns();" id="t-menuAbout">关于</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="result-bar">
-        <div><span style="font-size:11px;color:#aaa;" id="t-totalTadLabel">总 TAD</span><br><span class="tad-val" id="tadTotal">--</span></div>
-        <div class="legend-box">
-            <div class="legend-item"><div class="dot" style="background:#ffff00;"></div><span id="t-legendRef">标尺(校准) </span></div>
-            <div class="legend-item"><div class="dot" style="background:#ff00ff;"></div><span id="t-legendMea">测量(数据) </span></div>
-        </div>
-    </div>
-
-    <div class="tab-bar">
-        <div id="tab-ap" class="tab active" onclick="switchTab('ap')"><span id="t-tabAp">正位</span><span class="tab-val-inline" id="apDisplay">--</span></div>
-        <div id="tab-lat" class="tab" onclick="switchTab('lat')"><span id="t-tabLat">侧位</span><span class="tab-val-inline" id="latDisplay">--</span></div>
-    </div>
-
-    <div id="riskNotice" class="risk-red"></div>
-</div>
-
-<div class="viewport-wrapper">
-    <div class="main-container" id="container">
-        <div id="magnifier">
-            <div id="mag-content"></div>
-        </div>
-        <div id="view-ap" class="viewer-box active">
-            <div class="zoom-layer" id="layer-ap"><img id="img-ap"><svg id="svg-ap"></svg></div>
-        </div>
-        <div id="view-lat" class="viewer-box">
-            <div class="zoom-layer" id="layer-lat"><img id="img-lat"><svg id="svg-lat"></svg></div>
-        </div>
-    </div>
-</div>
-
-<!-- 隐藏文件已按照要求完成全部调整：
-
-1. **按钮名称与弹出菜单精简**：
-   * 主按钮恢复为 **📂 选择图片**（各语言同步改回「选择图片 / Select Image / Bild wählen 等」）。
-   * 点击后弹出的选择面板中移除了所有冗余汉字/外语说明，仅保留横向并排的纯图标大按钮：**📁**（相册/文件夹）与 **📷**（照相机），界面纯粹高效。
-2. **多语言用法与临床参考全量补齐**：
-   * 为德语（de）、西班牙语（es）、法语（fr）、葡萄牙语（pt）、日语（ja）、繁体中文（zh-TW）完整补全了与简体中文和英文完全对齐的**三步骤详解、本地 `guide.png` 示意图与临床风险评估四项指标表格**。
-3. **“标尺：”样式定制**：
-   * 将标尺标签样式设置为加粗，颜色统一为与校准线一致的高亮荧光黄（`color: #ffff00; font-weight: bold;`）。
-
----
-
-### 更新后的完整 `index.html` 代码
-
-请直接打开 `app/src/main/assets/index.html`，全选并替换为以下内容：
-
-```html
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAD 骨科精密测量系统 v4</title>
-    <style>
-        body { font-family: system-ui, sans-serif; background: #000; color: white; margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
-        
-        /* 顶部导航栏 */
-        .top-nav {
-            background: #111;
-            padding: 8px 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #333;
-            z-index: 101;
-        }
-        .top-title { font-size: 16px; font-weight: bold; color: #007bff; }
-        
-        .header { background: #222; padding: 10px; z-index: 100; border-bottom: 1px solid #444; }
-        .config-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
-        .btn-group { display: flex; gap: 8px; align-items: center; }
-        .btn { border: none; padding: 6px 14px; border-radius: 6px; font-size: 14px; color: white; cursor: pointer; background: #444; }
-        
-        /* 标尺样式：加粗并使用黄色线段同款颜色 #ffff00 */
+        /* 标尺文字：加粗并统一为高亮黄色 */
         .scale-label-custom {
             color: #ffff00;
             font-weight: bold;
             font-size: 14px;
         }
 
-        /* 下拉菜单样式 - 移除 CSS hover，完全由 JS 点击事件控制 */
+        /* 下拉菜单控制 */
         .dropdown { position: relative; display: inline-block; }
         .dropdown-content {
             display: none;
@@ -326,7 +58,7 @@
         }
         .dropdown-content a:hover, .dropdown-content a:active { background-color: #007bff; }
 
-        /* 模态弹窗样式 */
+        /* 模态弹窗 */
         .modal {
             display: none;
             position: fixed;
@@ -343,7 +75,7 @@
             background-color: #222;
             color: #eee;
             padding: 20px;
-            border-radius: 10px;
+            border-radius: 12px;
             max-width: 90%;
             max-height: 80vh;
             overflow-y: auto;
@@ -352,10 +84,38 @@
             font-size: 14px;
         }
         .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid #444; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .close-btn { font-size: 20px; cursor: pointer; color: #aaa; border: none; background: none; }
+        .close-btn { font-size: 24px; cursor: pointer; color: #aaa; border: none; background: none; }
         .close-btn:hover { color: #fff; }
         .modal-body img { max-width: 100%; height: auto; margin: 10px 0; border-radius: 6px; border: 1px solid #555; }
         
+        /* 纵向排列、放大 1 倍的纯图标按钮面板 */
+        .icon-vertical-picker {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 10px 0;
+        }
+        .icon-huge-btn {
+            background: #2b2b2b;
+            color: white;
+            border: 2px solid #555;
+            width: 120px;
+            height: 120px;
+            font-size: 60px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .icon-huge-btn:active {
+            background: #007bff;
+            transform: scale(0.94);
+        }
+
         /* 表格样式 */
         .guide-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
         .guide-table th, .guide-table td { border: 1px solid #555; padding: 6px; text-align: left; }
@@ -409,7 +169,6 @@
         img { display: block; user-select: none; pointer-events: none; }
         svg { touch-action: none; user-select: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; }
         
-        /* 测量线样式 */
         .line-ref { stroke: #ffff00; stroke-width: 2.5; }
         .line-mea { stroke: #ff00ff; stroke-width: 2.5; }
         .handle-hitbox { fill: transparent; cursor: pointer; }
@@ -425,33 +184,6 @@
 
         input[type="file"] { display: none; }
         .ref-box { margin-top: 15px; padding: 10px; background: #1a1a1a; border-left: 3px solid #007bff; border-radius: 4px; font-size: 11px; word-break: break-word; color: #bbb; }
-
-        /* 纯图标选择面板：无任何文字干扰 */
-        .icon-only-picker {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 25px;
-            padding: 10px 0;
-        }
-        .icon-picker-btn {
-            background: #2a2a2a;
-            color: white;
-            border: 1px solid #444;
-            width: 72px;
-            height: 72px;
-            font-size: 32px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-        }
-        .icon-picker-btn:active {
-            background: #007bff;
-            transform: scale(0.95);
-        }
     </style>
 </head>
 <body>
@@ -519,19 +251,19 @@
     </div>
 </div>
 
-<!-- 隐藏的文件调用选择器 -->
+<!-- 隐藏文件调用选择器：严格区分相册选择与直接相机捕获 -->
 <input type="file" id="inputAlbum" accept="image/*" onchange="loadImg(this)">
-<input type="file" id="inputCamera" accept="image/*" capture="environment" onchange="loadImg(this)">
+<input type="file" id="inputCamera" accept="image/*" capture="camera" onchange="loadImg(this)">
 
-<!-- 纯图标模式的来源选择弹窗 -->
+<!-- 纵向排列且放大的选择弹窗 -->
 <div id="imageSourceModal" class="modal">
-    <div class="modal-content" style="max-width:240px; text-align:center; padding:15px 20px;">
+    <div class="modal-content" style="max-width:200px; text-align:center; padding:15px 20px;">
         <div class="modal-header" style="justify-content:flex-end; border-bottom:none; padding-bottom:0; margin-bottom:5px;">
             <button class="close-btn" onclick="closeModal('imageSourceModal')">&times;</button>
         </div>
-        <div class="icon-only-picker">
-            <button class="icon-picker-btn" onclick="triggerAlbum()" title="相册">📁</button>
-            <button class="icon-picker-btn" onclick="triggerCamera()" title="拍照">📷</button>
+        <div class="icon-vertical-picker">
+            <button class="icon-huge-btn" onclick="triggerAlbum()" title="相册">📁</button>
+            <button class="icon-huge-btn" onclick="triggerCamera()" title="拍照">📷</button>
         </div>
     </div>
 </div>
@@ -566,7 +298,6 @@
         </div>
     `;
 
-    // 8 种语言完整对齐字典（包含全面准确的操作指南与四项核心指南表）
     const i18n = {
         'de': {
             topTitle: "TAD Messung", scaleLabel: "Skala:", btnSelectImg: "📂 Bild wählen", btnUsage: "Anleitung ▼", menuUsage: "Nutzung", menuAbout: "Über", totalTadLabel: "Gesamt TAD", legendRef: "Skala (Kalib.)", legendMea: "Messung (Daten)", tabAp: "AP-Ansicht", tabLat: "Lat-Ansicht", modalUsageTitle: "Bedienungsanleitung & Klinische Leitlinien", modalAboutTitle: "Über das System",
@@ -632,7 +363,7 @@
                 <p><strong>Core Function:</strong> Accurately calculate the Tip-Apex Distance (TAD) of lag screws via C-arm AP and Lateral X-rays.</p>
                 <p><strong>Clinical Value:</strong> TAD is the gold standard for evaluating implant placement and predicting screw cut-out risk.</p>
                 <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
-                <p><strong>Author:</strong> Yunmei Li</p>
+                <p><strong>Autor:</strong> Yunmei Li</p>
                 <p><strong>Address:</strong> Dept. of Hip Trauma, Cangzhou Hospital of Integrative Medicine, Hebei, China</p>
                 <p><strong>EMAIL:</strong> laomei1999@hotmail.com</p>
             `
@@ -666,7 +397,6 @@
                 <p><strong>Sistema de Medición de Precisión Ortopédica TAD</strong> es una herramienta ligera para fracturas de cadera (PFNA, DHS, Gamma Nail, FNS, etc.).</p>
                 <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
                 <p><strong>Autor:</strong> Yunmei Li</p>
-                <p><strong>Dirección:</strong> Hosp. de Medicina Integrativa de Cangzhou, Hebei, China</p>
                 <p><strong>EMAIL:</strong> laomei1999@hotmail.com</p>
             `
         },
@@ -936,11 +666,11 @@
     }
 
     function createHandle(svg, lineId, idx, x, y, color) {
-        const g = document.createElementNS("[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)", "g");
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
         g.setAttribute("id", `${lineId}-g${idx}`);
         g.setAttribute("transform", `translate(${x},${y}) rotate(0)`);
 
-        const poly = document.createElementNS("[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)", "polygon");
+        const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
         let points = (idx === 1) ? "0,0 -25,-15 -25,15" : "0,0 25,-15 25,15";
         poly.setAttribute("points", points);
         poly.style.fill = color + "66"; 
@@ -948,7 +678,7 @@
         poly.style.strokeWidth = "1.5px";
         poly.setAttribute("class", "handle-shape");
         
-        const hit = document.createElementNS("[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)", "circle");
+        const hit = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         hit.setAttribute("r", "40");
         hit.setAttribute("class", "handle-hitbox");
         hit.onpointerdown = (e) => startHDrag(e, lineId, idx, g);
@@ -978,7 +708,7 @@
         ];
 
         configs.forEach(c => {
-            const line = document.createElementNS("[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)", "line");
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
             line.setAttribute("id", c.id);
             line.setAttribute("x1", c.x1); line.setAttribute("y1", c.y1);
             line.setAttribute("x2", c.x2); line.setAttribute("y2", c.y2);
@@ -1099,7 +829,7 @@
         magContent.appendChild(img.cloneNode());
 
         if (magSvg) magSvg.remove();
-        magSvg = document.createElementNS('[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)', 'svg');
+        magSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         magSvg.setAttribute('width', '80');
         magSvg.setAttribute('height', '80');
         magSvg.style.position = 'absolute';
@@ -1107,14 +837,14 @@
         magSvg.style.top = '0';
         mag.appendChild(magSvg);
 
-        const center = document.createElementNS('[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)', 'circle');
+        const center = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         center.setAttribute('cx', '40');
         center.setAttribute('cy', '40');
         center.setAttribute('r', '3');
         center.setAttribute('fill', 'red');
         magSvg.appendChild(center);
 
-        magLine = document.createElementNS('[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)', 'line');
+        magLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         magLine.setAttribute('stroke', strokeColor);
         magLine.setAttribute('stroke-width', '3');
         magLine.setAttribute('stroke-linecap', 'round');
@@ -1209,7 +939,7 @@
         document.getElementById('view-'+t).classList.add('active');
         setZoomScale(data[cur].s);
     }
-    
+
     function loadImg(el) {
         if(!el.files || !el.files[0]) return;
         const url = URL.createObjectURL(el.files[0]);
